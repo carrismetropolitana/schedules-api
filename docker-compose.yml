@@ -58,6 +58,7 @@ services:
     networks:
       - backend-network
     environment:
+      - NODE_OPTIONS=--max_old_space_size=4096
       - GTFSAPIDB_HOST=gtfsapidb-production
       - GTFSAPIDB_USER=gtfsapidbuser
       - GTFSAPIDB_PASSWORD=gtfsapidbpassword
@@ -73,6 +74,7 @@ services:
     networks:
       - backend-network
     environment:
+      - NODE_OPTIONS=--max_old_space_size=4096
       - GTFSAPIDB_HOST=gtfsapidb-staging
       - GTFSAPIDB_USER=gtfsapidbuser
       - GTFSAPIDB_PASSWORD=gtfsapidbpassword
