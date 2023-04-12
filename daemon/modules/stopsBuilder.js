@@ -9,7 +9,7 @@ const timeCalc = require('./timeCalc');
  * @async
  * @returns {Array} Array of stops objects
  */
-async function getUniqueRouteShortNamesAtEachStop() {
+async function getStopsInfoFromDatabase() {
   const startTime = process.hrtime();
   console.log(`⤷ Querying database...`);
   const [rows, fields] = await GTFSParseDB.connection.execute(
@@ -19,7 +19,10 @@ async function getUniqueRouteShortNamesAtEachStop() {
             stops.stop_name, 
             stops.stop_lat, 
             stops.stop_lon, 
+            routes.route_id,
             routes.route_short_name,
+            routes.route_color,
+            routes.route_text_color,
             trips.trip_headsign,
             stop_times.departure_time 
         FROM 
@@ -51,68 +54,62 @@ module.exports = {
     let allProcessedStopIds = [];
 
     // Get all stops from GTFS table (stops.txt)
-    const allStopsWithRoutes = await getUniqueRouteShortNamesAtEachStop();
+    const allStopsData_raw = await getStopsInfoFromDatabase();
 
-    const stopData = {};
+    // Initiate an object to hold the formatted stop info
+    // An object allows for easier manipulation of the indexes
+    const allStops_formatted = {};
 
-    allStopsWithRoutes.forEach((row) => {
-      if (!(row.stop_id in stopData)) {
-        stopData[row.stop_id] = {
+    // Process each row of data retrieved from the database
+    allStopsData_raw.forEach(async (row) => {
+      //
+      // If the object does not already have the current stop_id sub-object...
+      if (!(row.stop_id in allStops_formatted)) {
+        // ... create it with the stop details
+        allStops_formatted[row.stop_id] = {
           stop_id: row.stop_id,
           stop_name: row.stop_name,
           stop_lat: row.stop_lat,
           stop_lon: row.stop_lon,
-          touches: [],
+          routes: [],
+          schedule: [],
         };
       }
-      stopData[row.stop_id].touches.push({
+
+      // For the current row add the found schedule to the correct stop_id
+      allStops_formatted[row.stop_id].schedule.push({
+        route_id: row.route_id,
         route_short_name: row.route_short_name,
+        route_color: row.route_color,
+        route_text_color: row.route_text_color,
         trip_headsign: row.trip_headsign,
         departure_time: row.departure_time,
       });
-    });
 
-    const output = Object.values(stopData);
-
-    console.log(output[0]);
-    console.log(output[1]);
-    console.log(output[2]);
-    console.log(output[3]);
-
-    return;
-
-    for (const currentStop of allStopsWithRoutes) {
-      console.log(currentStop);
-      //
-      // Record the start time to later calculate duration
-      const startTime = process.hrtime();
-
-      // Add this stop to the counter
-      allProcessedStopIds.push(currentStop.stop_id);
-
-      // Initiate the formatted route object
-      // with the direct values taken from the GTFS table.
-      let formattedStop = {
-        stop_id: currentStop.stop_id,
-        stop_name: currentStop.stop_name,
-        stop_lat: currentStop.stop_lat,
-        stop_lon: currentStop.stop_lon,
-        routes: [],
-      };
-
-      for (const foundRouteShortName of currentStop.routes.split(',')) {
-        const foundRouteSummaryObject = await GTFSAPIDB.RouteSummary.findOne({ route_short_name: foundRouteShortName });
+      // If the current route_short_name is not yet in the routes array of the route object,
+      // retrieve the RouteSummary object from the database and save it to the routes array of this stop.
+      if (!allStops_formatted[row.stop_id].routes.some((object) => object.route_short_name === row.route_short_name)) {
+        const foundRouteSummaryObject = await GTFSAPIDB.RouteSummary.findOne({ route_short_name: row.route_short_name });
         if (foundRouteSummaryObject) {
-          formattedStop.routes.push(foundRouteSummaryObject);
+          allStops_formatted[row.stop_id].routes.push(foundRouteSummaryObject);
         }
       }
+    });
 
-      await GTFSAPIDB.Stop.findOneAndUpdate({ stop_id: formattedStop.stop_id }, formattedStop, { upsert: true });
+    // Transform the object into an array of objects
+    const allStops_array = Object.values(allStops_formatted);
 
+    // Iterate on each stop object
+    for (const currentStop of allStops_array) {
+      // Record the start time to later calculate duration
+      const startTime = process.hrtime();
+      // Add this stop to the counter
+      allProcessedStopIds.push(currentStop.stop_id);
+      // Save the formatted stop to the database
+      await GTFSAPIDB.Stop.findOneAndUpdate({ stop_id: currentStop.stop_id }, currentStop, { upsert: true });
+      // Calculate elapsed time and log progress
       const elapsedTime = timeCalc.getElapsedTime(startTime);
-      console.log(`⤷ [${allProcessedStopIds.length}/${allStopsWithRoutes.length}] Saved stop ${formattedStop.stop_id} to API Database in ${elapsedTime}.`);
-
-      //
+      console.log(`⤷ [${allProcessedStopIds.length}/${allStops_array.length}] Saved stop ${currentStop.stop_id} to API Database in ${elapsedTime}.`);
     }
 
     // Delete all stops not present in the last update
