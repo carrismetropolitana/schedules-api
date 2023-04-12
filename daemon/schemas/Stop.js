@@ -28,7 +28,6 @@ module.exports = new mongoose.Schema(
         route_id: {
           type: String,
           maxlength: 100,
-          unique: true,
         },
         route_short_name: {
           type: String,

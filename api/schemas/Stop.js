@@ -45,6 +45,46 @@ module.exports = new mongoose.Schema(
           type: String,
           maxlength: 100,
         },
+        municipalities: [
+          {
+            id: {
+              type: String,
+              maxlength: 100,
+            },
+            value: {
+              type: String,
+              maxlength: 100,
+            },
+          },
+        ],
+      },
+    ],
+    schedule: [
+      {
+        route_id: {
+          type: String,
+          maxlength: 100,
+        },
+        route_short_name: {
+          type: String,
+          maxlength: 100,
+        },
+        route_color: {
+          type: String,
+          maxlength: 100,
+        },
+        route_text_color: {
+          type: String,
+          maxlength: 100,
+        },
+        trip_headsign: {
+          type: String,
+          maxlength: 100,
+        },
+        departure_time: {
+          type: String,
+          maxlength: 100,
+        },
       },
     ],
   },
