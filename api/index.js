@@ -94,7 +94,7 @@ app.get('/routes/route_short_name/:route_short_name', async (req, res) => {
 //
 app.get('/stops', async (req, res) => {
   try {
-    const foundManyDocuments = await GTFSAPIDB.Stop.find({});
+    const foundManyDocuments = await GTFSAPIDB.Stop.find({}, 'stop_id stop_name stop_lat stop_lon routes');
     if (foundManyDocuments.length > 0) {
       foundManyDocuments.sort((a, b) => (a.stop_id > b.stop_id ? 1 : -1));
       console.log('🟢 → Request for "/stops/[all]": %s Found', foundManyDocuments.length);
