@@ -15,24 +15,21 @@ async function getUniqueRouteShortNamesAtEachStop() {
   const [rows, fields] = await GTFSParseDB.connection.execute(
     `
         SELECT 
-            stops.stop_id, 
             stops.stop_name, 
             stops.stop_lat, 
             stops.stop_lon, 
-            GROUP_CONCAT(DISTINCT routes.route_short_name ORDER BY routes.route_short_name SEPARATOR ',') as routes,
-            GROUP_CONCAT(DISTINCT stop_times.departure_time ORDER BY stop_times.departure_time SEPARATOR ',') as departure_times
+            routes.route_short_name,
+            trips.trip_headsign,
+            stop_times.arrival_time, 
+            stop_times.departure_time 
         FROM 
             stops 
             JOIN stop_times ON stops.stop_id = stop_times.stop_id 
             JOIN trips ON stop_times.trip_id = trips.trip_id 
             JOIN routes ON trips.route_id = routes.route_id 
-        GROUP BY 
-            stops.stop_id, 
-            stops.stop_name, 
-            stops.stop_lat, 
-            stops.stop_lon 
         ORDER BY 
-            stops.stop_id;
+            stops.stop_name, 
+            stop_times.arrival_time;
     `
   );
   const elapsedTime = timeCalc.getElapsedTime(startTime);
