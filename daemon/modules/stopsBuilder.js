@@ -61,40 +61,37 @@ module.exports = {
     const allStops_formatted = {};
 
     // Process each row of data retrieved from the database
-    allStopsData_raw.forEach(async (row) => {
-      //
-      // If the object does not already have the current stop_id sub-object...
-      if (!(row.stop_id in allStops_formatted)) {
-        // ... create it with the stop details
-        allStops_formatted[row.stop_id] = {
-          stop_id: row.stop_id,
-          stop_name: row.stop_name,
-          stop_lat: row.stop_lat,
-          stop_lon: row.stop_lon,
+    for (const currentRow of allStopsData_raw) {
+      // If the object does not already have the current stop_id sub-object,
+      // create it with the stop details
+      if (!(currentRow.stop_id in allStops_formatted)) {
+        allStops_formatted[currentRow.stop_id] = {
+          stop_id: currentRow.stop_id,
+          stop_name: currentRow.stop_name,
+          stop_lat: currentRow.stop_lat,
+          stop_lon: currentRow.stop_lon,
           routes: [],
           schedule: [],
         };
       }
-
       // For the current row add the found schedule to the correct stop_id
-      allStops_formatted[row.stop_id].schedule.push({
-        route_id: row.route_id,
-        route_short_name: row.route_short_name,
-        route_color: row.route_color,
-        route_text_color: row.route_text_color,
-        trip_headsign: row.trip_headsign,
-        departure_time: row.departure_time,
+      allStops_formatted[currentRow.stop_id].schedule.push({
+        route_id: currentRow.route_id,
+        route_short_name: currentRow.route_short_name,
+        route_color: currentRow.route_color,
+        route_text_color: currentRow.route_text_color,
+        trip_headsign: currentRow.trip_headsign,
+        departure_time: currentRow.departure_time,
       });
-
       // If the current route_short_name is not yet in the routes array of the route object,
       // retrieve the RouteSummary object from the database and save it to the routes array of this stop.
-      if (!allStops_formatted[row.stop_id].routes.some((object) => object.route_short_name === row.route_short_name)) {
-        const foundRouteSummaryObject = await GTFSAPIDB.RouteSummary.findOne({ route_short_name: row.route_short_name });
+      if (!allStops_formatted[currentRow.stop_id].routes.some((object) => object.route_short_name === currentRow.route_short_name)) {
+        const foundRouteSummaryObject = await GTFSAPIDB.RouteSummary.findOne({ route_short_name: currentRow.route_short_name });
         if (foundRouteSummaryObject) {
-          allStops_formatted[row.stop_id].routes.push(foundRouteSummaryObject);
+          allStops_formatted[currentRow.stop_id].routes.push(foundRouteSummaryObject);
         }
       }
-    });
+    }
 
     // Transform the object into an array of objects
     const allStops_array = Object.values(allStops_formatted);
