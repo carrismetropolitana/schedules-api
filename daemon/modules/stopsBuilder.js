@@ -19,7 +19,8 @@ async function getUniqueRouteShortNamesAtEachStop() {
             stops.stop_name, 
             stops.stop_lat, 
             stops.stop_lon, 
-            GROUP_CONCAT(DISTINCT routes.route_short_name ORDER BY routes.route_short_name SEPARATOR ',') as routes 
+            GROUP_CONCAT(DISTINCT routes.route_short_name ORDER BY routes.route_short_name SEPARATOR ',') as routes,
+            GROUP_CONCAT(DISTINCT stop_times.departure_time ORDER BY stop_times.departure_time SEPARATOR ',') as departure_times
         FROM 
             stops 
             JOIN stop_times ON stops.stop_id = stop_times.stop_id 
@@ -56,6 +57,8 @@ module.exports = {
     const allStopsWithRoutes = await getUniqueRouteShortNamesAtEachStop();
 
     for (const currentStop of allStopsWithRoutes) {
+      console.log(currentStop);
+      return;
       //
       // Record the start time to later calculate duration
       const startTime = process.hrtime();
