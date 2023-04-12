@@ -60,8 +60,10 @@ module.exports = {
     // An object allows for easier manipulation of the indexes
     const allStops_formatted = {};
 
+    console.log(`⤷ Preparing to process ${allStopsData_raw.length} rows...`);
+
     // Process each row of data retrieved from the database
-    for (const currentRow of allStopsData_raw) {
+    for (const [index, currentRow] of allStopsData_raw.entries()) {
       // If the object does not already have the current stop_id sub-object,
       // create it with the stop details
       if (!(currentRow.stop_id in allStops_formatted)) {
@@ -91,6 +93,8 @@ module.exports = {
           allStops_formatted[currentRow.stop_id].routes.push(foundRouteSummaryObject);
         }
       }
+      // Log progress
+      console.log(`⤷ [${index}/${allStopsData_raw.length}] Processed row for stop_id ${currentRow.stop_id}.`);
     }
 
     // Transform the object into an array of objects
