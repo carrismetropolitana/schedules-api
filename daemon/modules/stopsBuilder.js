@@ -23,6 +23,8 @@ async function getStopsInfoFromDatabase() {
             routes.route_short_name,
             routes.route_color,
             routes.route_text_color,
+            trips.trip_id,
+            trips.direction_id,
             trips.trip_headsign,
             stop_times.departure_time 
         FROM 
@@ -76,14 +78,26 @@ module.exports = {
           schedule: [],
         };
       }
+      // Format departure_time
+      const departure_time_array = currentRow.departure_time.split(':');
+      let departure_time_hours = departure_time_array[0].padStart(2, '0');
+      if (departure_time_hours && Number(departure_time_hours) > 23) {
+        const departure_time_hours_adjusted = Number(departure_time_hours) - 24;
+        departure_time_hours = String(departure_time_hours_adjusted).padStart(2, '0');
+      }
+      const departure_time_minutes = departure_time_array[1].padStart(2, '0');
+      const departure_time_seconds = departure_time_array[2].padStart(2, '0');
       // For the current row add the found schedule to the correct stop_id
       allStops_formatted[currentRow.stop_id].schedule.push({
         route_id: currentRow.route_id,
         route_short_name: currentRow.route_short_name,
-        route_color: currentRow.route_color,
-        route_text_color: currentRow.route_text_color,
+        route_color: `#${currentRow.route_color}`,
+        route_text_color: `#${currentRow.route_text_color}`,
+        trip_id: currentRow.trip_id,
+        direction_id: currentRow.direction_id,
         trip_headsign: currentRow.trip_headsign,
-        departure_time: currentRow.departure_time,
+        departure_time: `${departure_time_hours}:${departure_time_minutes}:${departure_time_seconds}`,
+        departure_time_operation: currentRow.departure_time,
       });
       // If the current route_short_name is not yet in the routes array of the route object,
       // retrieve the RouteSummary object from the database and save it to the routes array of this stop.
