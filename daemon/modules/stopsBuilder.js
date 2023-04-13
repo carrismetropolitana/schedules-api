@@ -95,8 +95,8 @@ module.exports = {
     const allStops = await getAllStops();
 
     // Iterate on each stop
-    // for (const currentStop of allStops) {
-    allStops.forEach(async (currentStop) => {
+    for (const currentStop of allStops) {
+      // allStops.forEach(async (currentStop) => {
       //
       // Record the start time to later calculate duration
       const startTime = process.hrtime();
@@ -175,7 +175,7 @@ module.exports = {
       console.log(`⤷ [${allProcessedStopIds.length}/${allStops.length}] Saved stop ${currentStop.stop_id} to API Database in ${elapsedTime}.`);
 
       //
-    });
+    }
 
     // Delete all stops not present in the last update
     const deletedStaleStops = await GTFSAPIDB.Stop.deleteMany({ stop_id: { $nin: allProcessedStopIds } });
