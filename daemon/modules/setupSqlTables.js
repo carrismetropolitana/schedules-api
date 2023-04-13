@@ -44,7 +44,7 @@ module.exports = {
     console.log('⤷ Created SQL table "temp_shapes".');
 
     await GTFSParseDB.connection.execute(`CREATE TABLE temp_stop_times (
-        trip_id VARCHAR(255) NOT NULL PRIMARY KEY,
+        trip_id VARCHAR(255),
         arrival_time TIME,
         departure_time TIME,
         stop_id VARCHAR(6),
