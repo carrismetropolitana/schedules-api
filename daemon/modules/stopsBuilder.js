@@ -31,7 +31,7 @@ async function getAllStops() {
  * @async
  * @returns {Array} Array of stops objects
  */
-async function getAllStopsInfoFromDatabase() {
+async function getAllStopsInfoFromDatabase(stop_id) {
   const startTime = process.hrtime();
   console.log(`⤷ Querying database...`);
   const [rows, fields] = await GTFSParseDB.connection.execute(
@@ -54,6 +54,8 @@ async function getAllStopsInfoFromDatabase() {
             JOIN trips ON stop_times.trip_id = trips.trip_id 
             JOIN calendar_dates ON trips.service_id = calendar_dates.service_id 
             JOIN routes ON trips.route_id = routes.route_id 
+        WHERE
+            stops.stop_id = ? 
         GROUP BY 
             stops.stop_id, 
             routes.route_id,
@@ -68,7 +70,8 @@ async function getAllStopsInfoFromDatabase() {
         ORDER BY 
             stops.stop_id, 
             stop_times.departure_time;
-    `
+    `,
+    [stop_id]
   );
   const elapsedTime = timeCalc.getElapsedTime(startTime);
   console.log(`⤷ Done querying the database in ${elapsedTime}.`);
@@ -90,9 +93,6 @@ module.exports = {
 
     // Get all stops from GTFS table (stops.txt)
     const allStops = await getAllStops();
-
-    // Get all stops from GTFS table (stops.txt)
-    const allStopsInfo = await getAllStopsInfoFromDatabase();
 
     // Iterate on each stop
     // for (const currentStop of allStops) {
@@ -116,18 +116,21 @@ module.exports = {
 
       // Get stop schedule from database
 
-      const stopSchedule_raw = [];
+      //   const stopSchedule_raw = [];
 
-      let i = 0;
+      //   let i = 0;
 
-      while (i < allStopsInfo.length) {
-        if (allStopsInfo[i].stop_id === currentStop.stop_id) {
-          stopSchedule_raw.push(allStopsInfo[i]);
-          allStopsInfo.splice(i, 1);
-        } else {
-          i++;
-        }
-      }
+      //   while (i < allStopsInfo.length) {
+      //     if (allStopsInfo[i].stop_id === currentStop.stop_id) {
+      //       stopSchedule_raw.push(allStopsInfo[i]);
+      //       allStopsInfo.splice(i, 1);
+      //     } else {
+      //       i++;
+      //     }
+      //   }
+
+      // Get all stops from GTFS table (stops.txt)
+      const stopSchedule_raw = await getAllStopsInfoFromDatabase(currentStop.stop_id);
 
       // Process each row of data retrieved from the database
       for (const currentRow of stopSchedule_raw) {
