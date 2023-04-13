@@ -128,7 +128,7 @@ module.exports = {
         const departure_time_minutes = departure_time_array[1].padStart(2, '0');
         const departure_time_seconds = departure_time_array[2].padStart(2, '0');
 
-        console.log('currentRow.dates', currentRow.dates);
+        console.log('currentRow.dates', currentRow.dates.split(','));
         // For the current row add the found schedule to the correct stop_id
         formattedStop.schedule.push({
           route_id: currentRow.route_id,
