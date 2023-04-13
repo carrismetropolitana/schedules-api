@@ -114,6 +114,7 @@ app.get('/stops/:stop_id', async (req, res) => {
   try {
     const foundOneDocument = await GTFSAPIDB.Stop.findOne({ stop_id: req.params.stop_id });
     if (foundOneDocument) {
+      console.log(foundOneDocument.schedule[0]);
       console.log('🟢 → Request for "/stops/%s": 1 Found', req.params.stop_id);
       res.send(foundOneDocument);
     } else {
