@@ -31,7 +31,7 @@ async function getAllStops() {
  * @async
  * @returns {Array} Array of stops objects
  */
-async function getStopInfoFromDatabase(stop_id) {
+async function getAllStopsInfoFromDatabase() {
   const startTime = process.hrtime();
   console.log(`⤷ Querying database...`);
   const [rows, fields] = await GTFSParseDB.connection.execute(
@@ -54,8 +54,6 @@ async function getStopInfoFromDatabase(stop_id) {
             JOIN trips ON stop_times.trip_id = trips.trip_id 
             JOIN calendar_dates ON trips.service_id = calendar_dates.service_id 
             JOIN routes ON trips.route_id = routes.route_id 
-        WHERE 
-            stops.stop_id = ?
         GROUP BY 
             stops.stop_id, 
             routes.route_id,
@@ -70,8 +68,7 @@ async function getStopInfoFromDatabase(stop_id) {
         ORDER BY 
             stops.stop_id, 
             stop_times.departure_time;
-    `,
-    [stop_id]
+    `
   );
   const elapsedTime = timeCalc.getElapsedTime(startTime);
   console.log(`⤷ Done querying the database in ${elapsedTime}.`);
@@ -94,6 +91,9 @@ module.exports = {
     // Get all stops from GTFS table (stops.txt)
     const allStops = await getAllStops();
 
+    // Get all stops from GTFS table (stops.txt)
+    const allStopsInfo = await getAllStopsInfoFromDatabase();
+
     // Iterate on each stop
     for (const currentStop of allStops) {
       //
@@ -114,7 +114,19 @@ module.exports = {
       };
 
       // Get stop schedule from database
-      const stopSchedule_raw = await getStopInfoFromDatabase(currentStop.stop_id);
+
+      const stopSchedule_raw = [];
+
+      let i = 0;
+
+      while (i < allStopsInfo.length) {
+        if (allStopsInfo[i].stop_id === currentStop.stop_id) {
+          stopSchedule_raw.push(allStopsInfo[i]);
+          allStopsInfo.splice(i, 1);
+        } else {
+          i++;
+        }
+      }
 
       // Process each row of data retrieved from the database
       for (const currentRow of stopSchedule_raw) {
@@ -127,7 +139,6 @@ module.exports = {
         }
         const departure_time_minutes = departure_time_array[1].padStart(2, '0');
         const departure_time_seconds = departure_time_array[2].padStart(2, '0');
-
         // For the current row add the found schedule to the correct stop_id
         formattedStop.schedule.push({
           route_id: currentRow.route_id,
