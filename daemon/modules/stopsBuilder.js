@@ -70,7 +70,8 @@ async function getStopInfoFromDatabase(stop_id) {
         ORDER BY 
             stops.stop_id, 
             stop_times.departure_time;
-    `
+    `,
+    [stop_id]
   );
   const elapsedTime = timeCalc.getElapsedTime(startTime);
   console.log(`⤷ Done querying the database in ${elapsedTime}.`);
