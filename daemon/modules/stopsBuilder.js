@@ -151,8 +151,6 @@ module.exports = {
         }
       }
 
-      console.log('formattedStop.schedule[0]', formattedStop.schedule[0]);
-
       // Save the formatted stop to the database
       await GTFSAPIDB.Stop.findOneAndUpdate({ stop_id: currentStop.stop_id }, formattedStop, { upsert: true });
 
