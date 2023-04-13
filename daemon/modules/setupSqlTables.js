@@ -65,13 +65,14 @@ module.exports = {
     console.log('⤷ Created SQL table "temp_stops".');
 
     await GTFSParseDB.connection.execute(`CREATE TABLE temp_trips (
-        trip_id VARCHAR(255) NOT NULL PRIMARY KEY,
+        trip_id VARCHAR(255),
         route_id VARCHAR(255),
         service_id VARCHAR(255),
         trip_headsign VARCHAR(255),
         direction_id TINYINT,
         shape_id VARCHAR(255)
     );`);
+    await GTFSParseDB.connection.execute('ALTER TABLE temp_trips ADD KEY idx_trip_id (trip_id);');
     await GTFSParseDB.connection.execute('ALTER TABLE temp_trips ADD KEY idx_service_id (service_id);');
     await GTFSParseDB.connection.execute('ALTER TABLE temp_trips ADD KEY idx_route_id (route_id);');
     await GTFSParseDB.connection.execute('ALTER TABLE temp_trips ADD KEY idx_service_id_route_id (service_id, route_id);');
