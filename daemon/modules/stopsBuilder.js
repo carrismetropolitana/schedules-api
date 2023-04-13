@@ -46,7 +46,7 @@ async function getStopInfoFromDatabase(stop_id) {
             trips.direction_id,
             trips.trip_headsign,
             stop_times.departure_time,
-            stop_times.stop_sequence, 
+            stop_times.stop_sequence,
             GROUP_CONCAT(calendar_dates.date ORDER BY calendar_dates.date ASC SEPARATOR ',') AS dates
         FROM 
             stops 
@@ -55,7 +55,7 @@ async function getStopInfoFromDatabase(stop_id) {
             JOIN calendar_dates ON trips.service_id = calendar_dates.service_id 
             JOIN routes ON trips.route_id = routes.route_id 
         WHERE 
-            stops.stop_id = ? 
+            stops.stop_id = ?
         GROUP BY 
             stops.stop_id, 
             routes.route_id,
@@ -127,6 +127,8 @@ module.exports = {
         }
         const departure_time_minutes = departure_time_array[1].padStart(2, '0');
         const departure_time_seconds = departure_time_array[2].padStart(2, '0');
+
+        console.log('currentRow.dates', currentRow.dates);
         // For the current row add the found schedule to the correct stop_id
         formattedStop.schedule.push({
           route_id: currentRow.route_id,
