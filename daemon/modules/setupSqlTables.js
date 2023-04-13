@@ -13,13 +13,13 @@ module.exports = {
     // Create tables
 
     await GTFSParseDB.connection.execute(`CREATE TABLE temp_calendar_dates (
-        service_id VARCHAR(255) NOT NULL PRIMARY KEY,
+        service_id VARCHAR(255),
         date VARCHAR(8),
         period SMALLINT,
         day_type SMALLINT,
         exception_type SMALLINT
     );`);
-    // await GTFSParseDB.connection.execute('ALTER TABLE temp_calendar_dates ADD KEY `service_id` (`service_id`);');
+    await GTFSParseDB.connection.execute('ALTER TABLE temp_calendar_dates ADD KEY idx_service_id (service_id);');
     console.log('⤷ Created SQL table "temp_calendar_dates".');
 
     await GTFSParseDB.connection.execute(`CREATE TABLE temp_routes (
@@ -34,13 +34,13 @@ module.exports = {
     console.log('⤷ Created SQL table "temp_routes".');
 
     await GTFSParseDB.connection.execute(`CREATE TABLE temp_shapes (
-        shape_id VARCHAR(255) NOT NULL PRIMARY KEY,
+        shape_id VARCHAR(255),
         shape_pt_lat FLOAT(6),
         shape_pt_lon FLOAT(6),
         shape_pt_sequence SMALLINT,
         shape_dist_traveled FLOAT(6)
     );`);
-    await GTFSParseDB.connection.execute('ALTER TABLE temp_shapes ADD KEY `shape_id` (`shape_id`);');
+    await GTFSParseDB.connection.execute('ALTER TABLE temp_shapes ADD KEY idx_shape_id (shape_id);');
     console.log('⤷ Created SQL table "temp_shapes".');
 
     await GTFSParseDB.connection.execute(`CREATE TABLE temp_stop_times (
