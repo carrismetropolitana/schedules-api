@@ -89,6 +89,12 @@ module.exports = new mongoose.Schema(
           type: String,
           maxlength: 100,
         },
+        dates: [
+          {
+            type: String,
+            maxlength: 100,
+          },
+        ],
         departure_time: {
           type: String,
           maxlength: 100,
