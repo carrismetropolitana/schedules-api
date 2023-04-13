@@ -90,6 +90,7 @@ services:
     volumes:
       - ./data-temp/production/:/data-temp
     environment:
+      - NODE_OPTIONS=--max_old_space_size=4096
       - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
       - GTFSAPIDB_HOST=gtfsapidb-production
       - GTFSAPIDB_USER=gtfsapidbuser
@@ -111,6 +112,7 @@ services:
     volumes:
       - ./data-temp/staging/:/data-temp
     environment:
+      - NODE_OPTIONS=--max_old_space_size=4096
       - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/next/CarrisMetropolitana.zip
       - GTFSAPIDB_HOST=gtfsapidb-staging
       - GTFSAPIDB_USER=gtfsapidbuser
