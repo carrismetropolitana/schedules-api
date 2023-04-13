@@ -26,12 +26,20 @@ async function getStopsInfoFromDatabase() {
             trips.trip_id,
             trips.direction_id,
             trips.trip_headsign,
-            stop_times.departure_time 
+            GROUP_CONCAT(calendar_dates.date ORDER BY calendar_dates.date ASC SEPARATOR ',') AS dates,
+            stop_times.departure_time,
+            stop_times.stop_sequence 
         FROM 
             stops 
             JOIN stop_times ON stops.stop_id = stop_times.stop_id 
             JOIN trips ON stop_times.trip_id = trips.trip_id 
+            JOIN calendar_dates ON trips.service_id = calendar_dates.service_id 
             JOIN routes ON trips.route_id = routes.route_id 
+        GROUP BY 
+            trips.trip_id, 
+            stops.stop_id, 
+            stop_times.departure_time,
+            stop_times.stop_sequence 
         ORDER BY 
             stops.stop_id, 
             stop_times.departure_time;
@@ -96,6 +104,7 @@ module.exports = {
         trip_id: currentRow.trip_id,
         direction_id: currentRow.direction_id,
         trip_headsign: currentRow.trip_headsign,
+        dates: currentRow.dates.split(','),
         departure_time: `${departure_time_hours}:${departure_time_minutes}:${departure_time_seconds}`,
         departure_time_operation: currentRow.departure_time,
       });
