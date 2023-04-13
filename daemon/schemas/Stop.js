@@ -95,6 +95,10 @@ module.exports = new mongoose.Schema(
             maxlength: 100,
           },
         ],
+        stop_sequence: {
+          type: String,
+          maxlength: 100,
+        },
         departure_time: {
           type: String,
           maxlength: 100,

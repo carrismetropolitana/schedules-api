@@ -138,6 +138,7 @@ module.exports = {
           direction_id: currentRow.direction_id,
           trip_headsign: currentRow.trip_headsign,
           dates: currentRow.dates.split(','),
+          stop_sequence: currentRow.stop_sequence,
           departure_time: `${departure_time_hours}:${departure_time_minutes}:${departure_time_seconds}`,
           departure_time_operation: currentRow.departure_time,
         });
