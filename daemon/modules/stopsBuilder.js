@@ -151,11 +151,11 @@ module.exports = {
       }
 
       // Save the formatted stop to the database
-      await GTFSAPIDB.Stop.findOneAndUpdate({ stop_id: currentStop.stop_id }, currentStop, { upsert: true });
+      await GTFSAPIDB.Stop.findOneAndUpdate({ stop_id: formattedStop.stop_id }, formattedStop, { upsert: true });
 
       // Calculate elapsed time and log progress
       const elapsedTime = timeCalc.getElapsedTime(startTime);
-      console.log(`⤷ [${allProcessedStopIds.length}/${allStops.length}] Saved stop ${currentStop.stop_id} to API Database in ${elapsedTime}.`);
+      console.log(`⤷ [${allProcessedStopIds.length}/${allStops.length}] Saved stop ${formattedStop.stop_id} to API Database in ${elapsedTime}.`);
 
       //
     }

@@ -113,7 +113,7 @@ services:
       - ./data-temp/staging/:/data-temp
     environment:
       - NODE_OPTIONS=--max_old_space_size=4096
-      - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/next/CarrisMetropolitana.zip
+      - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
       - GTFSAPIDB_HOST=gtfsapidb-staging
       - GTFSAPIDB_USER=gtfsapidbuser
       - GTFSAPIDB_PASSWORD=gtfsapidbpassword
