@@ -114,23 +114,9 @@ module.exports = {
         schedule: [],
       };
 
-      // Get stop schedule from database
-
-      //   const stopSchedule_raw = [];
-
-      //   let i = 0;
-
-      //   while (i < allStopsInfo.length) {
-      //     if (allStopsInfo[i].stop_id === currentStop.stop_id) {
-      //       stopSchedule_raw.push(allStopsInfo[i]);
-      //       allStopsInfo.splice(i, 1);
-      //     } else {
-      //       i++;
-      //     }
-      //   }
-
       // Get all stops from GTFS table (stops.txt)
       const stopSchedule_raw = await getAllStopsInfoFromDatabase(currentStop.stop_id);
+      console.log('currentStop.stop_id', currentStop.stop_id);
       console.log('stopSchedule_raw', stopSchedule_raw);
 
       // Process each row of data retrieved from the database
