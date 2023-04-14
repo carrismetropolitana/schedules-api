@@ -31,13 +31,13 @@ async function getAllStops() {
  * @async
  * @returns {Array} Array of stops objects
  */
-async function getAllStopsInfoFromDatabase(stop_id) {
+async function getAllStopsInfoFromDatabase() {
   const startTime = process.hrtime();
   console.log(`⤷ Querying database...`);
   const [rows, fields] = await GTFSParseDB.connection.execute(
     `
         SELECT 
-            stops.stop_id,
+            stops.stop_id, 
             routes.route_id,
             routes.route_short_name,
             routes.route_color,
@@ -47,17 +47,15 @@ async function getAllStopsInfoFromDatabase(stop_id) {
             trips.trip_headsign,
             stop_times.departure_time,
             stop_times.stop_sequence,
-            GROUP_CONCAT(calendar_dates.date ORDER BY calendar_dates.date ASC SEPARATOR ',') AS dates 
+            GROUP_CONCAT(calendar_dates.date ORDER BY calendar_dates.date ASC SEPARATOR ',') AS dates
         FROM 
             stops 
             JOIN stop_times ON stops.stop_id = stop_times.stop_id 
             JOIN trips ON stop_times.trip_id = trips.trip_id 
             JOIN calendar_dates ON trips.service_id = calendar_dates.service_id 
             JOIN routes ON trips.route_id = routes.route_id 
-        WHERE 
-            stops.stop_id = ? 
         GROUP BY 
-            stops.stop_id,
+            stops.stop_id, 
             routes.route_id,
             routes.route_short_name,
             routes.route_color,
@@ -68,10 +66,9 @@ async function getAllStopsInfoFromDatabase(stop_id) {
             stop_times.departure_time,
             stop_times.stop_sequence 
         ORDER BY 
-            stops.stop_id,
+            stops.stop_id, 
             stop_times.departure_time;
-    `,
-    [stop_id]
+    `
   );
   const elapsedTime = timeCalc.getElapsedTime(startTime);
   console.log(`⤷ Done querying the database in ${elapsedTime}.`);
@@ -94,9 +91,11 @@ module.exports = {
     // Get all stops from GTFS table (stops.txt)
     const allStops = await getAllStops();
 
+    // Get all stops from GTFS table (stops.txt)
+    const allStopsInfo = await getAllStopsInfoFromDatabase();
+
     // Iterate on each stop
     for (const currentStop of allStops) {
-      // allStops.forEach(async (currentStop) => {
       //
       // Record the start time to later calculate duration
       const startTime = process.hrtime();
@@ -114,10 +113,20 @@ module.exports = {
         schedule: [],
       };
 
-      // Get all stops from GTFS table (stops.txt)
-      const stopSchedule_raw = await getAllStopsInfoFromDatabase(currentStop.stop_id);
-      console.log('currentStop.stop_id', currentStop.stop_id);
-      console.log('stopSchedule_raw', stopSchedule_raw);
+      // Get stop schedule from database
+
+      const stopSchedule_raw = [];
+
+      let i = 0;
+
+      while (i < allStopsInfo.length) {
+        if (allStopsInfo[i].stop_id === currentStop.stop_id) {
+          stopSchedule_raw.push(allStopsInfo[i]);
+          allStopsInfo.splice(i, 1);
+        } else {
+          i++;
+        }
+      }
 
       // Process each row of data retrieved from the database
       for (const currentRow of stopSchedule_raw) {
