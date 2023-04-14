@@ -23,14 +23,14 @@ module.exports = {
     console.log('⤷ Created SQL table "temp_calendar_dates".');
 
     await GTFSParseDB.connection.execute(`CREATE TABLE temp_routes (
-        route_id VARCHAR(10),
+        route_id VARCHAR(10) NOT NULL PRIMARY KEY,
         route_short_name VARCHAR(10),
         route_long_name VARCHAR(255),
         route_type VARCHAR(255),
         route_color VARCHAR(6),
         route_text_color VARCHAR(6)
     );`);
-    await GTFSParseDB.connection.execute('ALTER TABLE temp_routes ADD KEY `route_id` (`route_id`);');
+    // await GTFSParseDB.connection.execute('ALTER TABLE temp_routes ADD KEY `route_id` (`route_id`);');
     console.log('⤷ Created SQL table "temp_routes".');
 
     await GTFSParseDB.connection.execute(`CREATE TABLE temp_shapes (
@@ -50,8 +50,9 @@ module.exports = {
         stop_id VARCHAR(6),
         stop_sequence SMALLINT
     );`);
-    await GTFSParseDB.connection.execute('ALTER TABLE temp_stop_times ADD KEY `trip_id` (`trip_id`);');
     await GTFSParseDB.connection.execute('ALTER TABLE temp_stop_times ADD KEY `stop_id` (`stop_id`);');
+    await GTFSParseDB.connection.execute('ALTER TABLE temp_stop_times ADD KEY `trip_id` (`trip_id`);');
+    await GTFSParseDB.connection.execute('ALTER TABLE temp_stop_times ADD KEY `stop_id_trip_id` (`stop_id`, `trip_id`);');
     console.log('⤷ Created SQL table "temp_stop_times".');
 
     await GTFSParseDB.connection.execute(`CREATE TABLE temp_stops (
@@ -71,8 +72,10 @@ module.exports = {
         direction_id TINYINT,
         shape_id VARCHAR(255)
     );`);
+    await GTFSParseDB.connection.execute('ALTER TABLE temp_trips ADD KEY `trip_id` (`trip_id`);');
+    await GTFSParseDB.connection.execute('ALTER TABLE temp_trips ADD KEY `service_id` (`service_id`);');
     await GTFSParseDB.connection.execute('ALTER TABLE temp_trips ADD KEY `route_id` (`route_id`);');
-    await GTFSParseDB.connection.execute('ALTER TABLE temp_trips ADD KEY `route_id_service_id` (`route_id`, `service_id`);');
+    await GTFSParseDB.connection.execute('ALTER TABLE temp_trips ADD KEY `service_id_route_id` (`service_id`, `route_id`);');
     console.log('⤷ Created SQL table "temp_trips".');
 
     console.log('⤷ All SQL tables created.');
