@@ -131,6 +131,7 @@ module.exports = {
 
       // Get all stops from GTFS table (stops.txt)
       const stopSchedule_raw = await getAllStopsInfoFromDatabase(currentStop.stop_id);
+      console.log('stopSchedule_raw', stopSchedule_raw);
 
       // Process each row of data retrieved from the database
       for (const currentRow of stopSchedule_raw) {
