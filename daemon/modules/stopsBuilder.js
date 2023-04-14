@@ -31,7 +31,7 @@ async function getAllStops() {
  * @async
  * @returns {Array} Array of stops objects
  */
-async function getAllStopsInfoFromDatabase() {
+async function getStopInfoFromDatabase(stop_id) {
   const startTime = process.hrtime();
   console.log(`⤷ Querying database...`);
   const [rows, fields] = await GTFSParseDB.connection.execute(
@@ -46,7 +46,7 @@ async function getAllStopsInfoFromDatabase() {
             trips.direction_id,
             trips.trip_headsign,
             stop_times.departure_time,
-            stop_times.stop_sequence,
+            stop_times.stop_sequence, 
             GROUP_CONCAT(calendar_dates.date ORDER BY calendar_dates.date ASC SEPARATOR ',') AS dates
         FROM 
             stops 
@@ -54,6 +54,8 @@ async function getAllStopsInfoFromDatabase() {
             JOIN trips ON stop_times.trip_id = trips.trip_id 
             JOIN calendar_dates ON trips.service_id = calendar_dates.service_id 
             JOIN routes ON trips.route_id = routes.route_id 
+        WHERE 
+            stops.stop_id = ? 
         GROUP BY 
             stops.stop_id, 
             routes.route_id,
@@ -91,9 +93,6 @@ module.exports = {
     // Get all stops from GTFS table (stops.txt)
     const allStops = await getAllStops();
 
-    // Get all stops from GTFS table (stops.txt)
-    const allStopsInfo = await getAllStopsInfoFromDatabase();
-
     // Iterate on each stop
     for (const currentStop of allStops) {
       //
@@ -114,19 +113,7 @@ module.exports = {
       };
 
       // Get stop schedule from database
-
-      const stopSchedule_raw = [];
-
-      let i = 0;
-
-      while (i < allStopsInfo.length) {
-        if (allStopsInfo[i].stop_id === currentStop.stop_id) {
-          stopSchedule_raw.push(allStopsInfo[i]);
-          allStopsInfo.splice(i, 1);
-        } else {
-          i++;
-        }
-      }
+      const stopSchedule_raw = await getStopInfoFromDatabase(currentStop.stop_id);
 
       // Process each row of data retrieved from the database
       for (const currentRow of stopSchedule_raw) {
@@ -149,7 +136,6 @@ module.exports = {
           direction_id: currentRow.direction_id,
           trip_headsign: currentRow.trip_headsign,
           dates: currentRow.dates.split(','),
-          stop_sequence: currentRow.stop_sequence,
           departure_time: `${departure_time_hours}:${departure_time_minutes}:${departure_time_seconds}`,
           departure_time_operation: currentRow.departure_time,
         });
@@ -164,7 +150,7 @@ module.exports = {
       }
 
       // Save the formatted stop to the database
-      await GTFSAPIDB.Stop.findOneAndUpdate({ stop_id: currentStop.stop_id }, formattedStop, { upsert: true });
+      await GTFSAPIDB.Stop.findOneAndUpdate({ stop_id: currentStop.stop_id }, currentStop, { upsert: true });
 
       // Calculate elapsed time and log progress
       const elapsedTime = timeCalc.getElapsedTime(startTime);
