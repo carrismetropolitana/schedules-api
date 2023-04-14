@@ -54,6 +54,8 @@ async function getAllStopsInfoFromDatabase(stop_id) {
             JOIN trips ON stop_times.trip_id = trips.trip_id 
             JOIN calendar_dates ON trips.service_id = calendar_dates.service_id 
             JOIN routes ON trips.route_id = routes.route_id 
+        WHERE 
+            stops.stop_id = ? 
         GROUP BY 
             stops.stop_id,
             routes.route_id,
