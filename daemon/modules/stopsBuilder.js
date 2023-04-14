@@ -37,7 +37,7 @@ async function getAllStopsInfoFromDatabase(stop_id) {
   const [rows, fields] = await GTFSParseDB.connection.execute(
     `
         SELECT 
-            stops.stop_id, 
+            stops.stop_id,
             routes.route_id,
             routes.route_short_name,
             routes.route_color,
@@ -57,7 +57,7 @@ async function getAllStopsInfoFromDatabase(stop_id) {
         WHERE 
             stops.stop_id = ? 
         GROUP BY 
-            stops.stop_id, 
+            stops.stop_id,
             routes.route_id,
             routes.route_short_name,
             routes.route_color,
@@ -68,7 +68,7 @@ async function getAllStopsInfoFromDatabase(stop_id) {
             stop_times.departure_time,
             stop_times.stop_sequence 
         ORDER BY 
-            stops.stop_id, 
+            stops.stop_id,
             stop_times.departure_time;
     `,
     [stop_id]
