@@ -183,7 +183,7 @@ async function formatAndSaveAllShapes() {
     return accumulator;
   }, []);
 
-  console.log(`⤷ Shapes reduced.`);
+  console.log(`⤷ Shape points reduced into ${allShapes_formatted.length} shapes.`);
 
   // Sort each shape points array by 'shape_pt_sequence'
   // The use of collator here is to ensure 'natural sorting' on numeric strings: https://stackoverflow.com/questions/2802341/natural-sort-of-alphanumerical-strings-in-javascript
@@ -192,7 +192,7 @@ async function formatAndSaveAllShapes() {
     currentShape.points = currentShape.points.sort((a, b) => collator.compare(a.shape_pt_sequence, b.shape_pt_sequence));
   });
 
-  console.log(`⤷ Shapes formatted.`);
+  console.log(`⤷ Shapes ordered by "shape_pt_sequence".`);
 
   // Create the geojson structure for each shape
   allShapes_formatted.forEach((currentShape) => {
@@ -204,8 +204,9 @@ async function formatAndSaveAllShapes() {
   console.log(`⤷ Shapes geojson.`);
 
   // Finally, update all shapes
-  for (const currentShape of allShapes_formatted) {
+  for (const [currentShapeIndex, currentShape] of allShapes_formatted.entries()) {
     await GTFSAPIDB.Shape.findOneAndUpdate({ shape_id: currentShape.shape_id }, currentShape, { upsert: true });
+    console.log(`⤷ [${currentShapeIndex}/${allShapes_formatted.length}] Saved shape_id ${currentShape.shape_id} to API database.`);
   }
 
   // Log progress
