@@ -20,6 +20,29 @@ async function getMunicipalities() {
 //
 
 /**
+ * Retrieve all shapes from 'shapes' table
+ * @async
+ * @returns {Array} Array of shape point objects
+ */
+async function getAllShapes() {
+  const [rows, fields] = await GTFSParseDB.connection.execute(`
+      SELECT
+          shape_id,
+          shape_pt_lat,
+          shape_pt_lon,
+          shape_pt_sequence,
+          shape_dist_traveled
+      FROM
+          shapes
+    `);
+  return rows;
+}
+
+//
+//
+//
+
+/**
  * Retrieve all routes from 'routes' table
  * @async
  * @returns {Array} Array of route objects
