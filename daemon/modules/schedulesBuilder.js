@@ -370,6 +370,8 @@ module.exports = {
             // Skip all trips that do not belong to the current direction
             if (currentTrip.direction_id !== currentPattern.direction_id) continue;
 
+            console.log('currentRouteId', currentRouteId, 'currentTrip.trip_id: ', currentTrip.trip_id);
+
             // Initiate the formatted trip object
             let formattedTrip = {
               trip_id: currentTrip.trip_id,
