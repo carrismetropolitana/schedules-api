@@ -333,15 +333,13 @@ module.exports = {
 
       // 2. ROUTES
       // Iterate on each route
-      for (const currentRoute of currentLine.route_ids) {
+      for (const currentRouteId of currentLine.route_ids) {
         //
         // Record the start time to later calculate duration
         const startTime_route = process.hrtime();
 
-        console.log('currentRoute.route_id', currentRoute.route_id);
-
         // Get all trips associated with this route
-        const allTripsForThisRoute_raw = await getTrips(currentRoute.route_id);
+        const allTripsForThisRoute_raw = await getTrips(currentRouteId);
 
         // Simplify the trips array to only include the following attributes.
         // These are the distinguishing factors for each pattern, i.e. the path and direction of a vehicle.
