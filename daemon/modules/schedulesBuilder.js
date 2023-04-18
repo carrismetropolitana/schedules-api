@@ -449,6 +449,7 @@ module.exports = {
               });
 
               //
+              //
             }
 
             // Save trip object to trips array
