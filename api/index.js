@@ -22,6 +22,23 @@ app.use(function (req, res, next) {
 });
 
 //
+app.get('/lines/:route_short_name', async (req, res) => {
+  try {
+    const foundOneDocument = await GTFSAPIDB.Line.findOne({ route_short_name: req.params.route_short_name });
+    if (foundOneDocument) {
+      console.log('🟢 → Request for "/lines/%s": 1 Found', req.params.route_short_name);
+      res.send(foundOneDocument);
+    } else {
+      console.log('🟡 → Request for "/lines/%s": Not Found', req.params.route_short_name);
+      res.status(404).send({});
+    }
+  } catch (err) {
+    console.log('🔴 → Request for "/lines/%s": Server Error', req.params.route_short_name, err);
+    res.status(500).send({});
+  }
+});
+
+//
 app.get('/routes', async (req, res) => {
   try {
     const foundManyDocuments = await GTFSAPIDB.Route.find({});
