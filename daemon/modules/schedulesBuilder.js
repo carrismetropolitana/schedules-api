@@ -466,6 +466,7 @@ module.exports = {
         await GTFSAPIDB.Line.findOneAndUpdate({ route_short_name: formattedLine.route_short_name }, formattedLine, { upsert: true });
         console.log(`⤷ [${currentLineIndex}/${allLines_raw.length}] Saved line ${formattedLine.route_short_name} to API Database in ${timeCalc.getElapsedTime(startTime_line)}.`);
       } catch (err) {
+        console.log(err);
         console.log('ERRROROROROROROROROR', formattedLine.route_short_name, formattedLine.patterns);
       }
 
