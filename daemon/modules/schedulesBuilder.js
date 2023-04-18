@@ -370,8 +370,6 @@ module.exports = {
             // Skip all trips that do not belong to the current direction
             if (currentTrip.direction_id !== currentPattern.direction_id) continue;
 
-            console.log('currentRouteId', currentRouteId, 'currentTrip.trip_id: ', currentTrip.trip_id);
-
             // Initiate the formatted trip object
             let formattedTrip = {
               trip_id: currentTrip.trip_id,
@@ -463,9 +461,13 @@ module.exports = {
         //
       }
 
-      // Save route to MongoDB
-      await GTFSAPIDB.Line.findOneAndUpdate({ route_short_name: formattedLine.route_short_name }, formattedLine, { upsert: true });
-      console.log(`⤷ [${currentLineIndex}/${allLines_raw.length}] Saved line ${formattedLine.route_short_name} to API Database in ${timeCalc.getElapsedTime(startTime_line)}.`);
+      try {
+        // Save route to MongoDB
+        await GTFSAPIDB.Line.findOneAndUpdate({ route_short_name: formattedLine.route_short_name }, formattedLine, { upsert: true });
+        console.log(`⤷ [${currentLineIndex}/${allLines_raw.length}] Saved line ${formattedLine.route_short_name} to API Database in ${timeCalc.getElapsedTime(startTime_line)}.`);
+      } catch (err) {
+        console.log('ERRROROROROROROROROR', formattedLine.route_short_name, formattedLine.patterns);
+      }
 
       //
     }
