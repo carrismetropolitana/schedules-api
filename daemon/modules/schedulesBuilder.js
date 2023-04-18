@@ -24,7 +24,7 @@ async function getMunicipalities() {
  * @async
  * @returns {Array} Array of route objects
  */
-async function getRoutes() {
+async function getAllRoutes() {
   const [rows, fields] = await GTFSParseDB.connection.execute(`
     SELECT
         route_id,
@@ -64,34 +64,6 @@ async function getTrips(route_id) {
             route_id = ?
     `,
     [route_id]
-  );
-  return rows;
-}
-
-//
-//
-//
-
-/**
- * Retrieve shape matching the provided shape_id
- * @async
- * @param {String} shape_id The shape_id to retrieve
- * @returns {Array} Array of shape points
- */
-async function getShape(shape_id) {
-  const [rows, fields] = await GTFSParseDB.connection.execute(
-    `
-        SELECT
-            shape_pt_lat,
-            shape_pt_lon,
-            shape_pt_sequence,
-            shape_dist_traveled
-        FROM
-            shapes
-        WHERE
-            shape_id = ?
-    `,
-    [shape_id]
   );
   return rows;
 }
@@ -157,6 +129,58 @@ async function getStopTimes(trip_id) {
   return rows;
 }
 
+// accumulator[existingShape].geojson.geometry.push([parseFloat(currentPoint.shape_pt_lon), parseFloat(currentPoint.shape_pt_lat)]);
+
+async function formatAndSaveAllShapes() {
+  //
+  // Record the start time to later calculate duration
+  const startTime_shapes = process.hrtime();
+
+  // Get all shapes from GTFS table (shapes.txt)
+  const allShapes_raw = await getAllShapes();
+
+  // Combine shapes with the same shape_id into a 'shape' object
+  const allShapes_formatted = allShapes_raw.reduce((accumulator, currentPoint) => {
+    // Check if the shape for this point is already present in the accumulator
+    const existingShape = accumulator.findIndex((item) => item.shape_id === currentPoint.shape_id);
+    // If there is not a shape yet, add this point as a new shape with all its properties
+    if (existingShape === -1)
+      accumulator.push({
+        shape_id: currentPoint.shape_id,
+        points: [{ shape_pt_lat: currentPoint.shape_pt_lat, shape_pt_lon: currentPoint.shape_pt_lon, shape_pt_sequence: currentPoint.shape_pt_sequence, shape_dist_traveled: currentPoint.shape_dist_traveled }],
+        geojson: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } },
+      });
+    // else, if there is a shape already, then add this point to the array of points.
+    else accumulator[existingShape].points.push({ shape_pt_lat: currentPoint.shape_pt_lat, shape_pt_lon: currentPoint.shape_pt_lon, shape_pt_sequence: currentPoint.shape_pt_sequence, shape_dist_traveled: currentPoint.shape_dist_traveled });
+    // Finally return the updated accumulator array
+    return accumulator;
+  }, []);
+
+  // Sort each shape points array by 'shape_pt_sequence'
+  // The use of collator here is to ensure 'natural sorting' on numeric strings: https://stackoverflow.com/questions/2802341/natural-sort-of-alphanumerical-strings-in-javascript
+  allShapes_formatted.forEach((currentShape) => {
+    const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+    currentShape.points = currentShape.points.sort((a, b) => collator.compare(a.shape_pt_sequence, b.shape_pt_sequence));
+  });
+
+  // Create the geojson structure for each shape
+  allShapes_formatted.forEach((currentShape) => {
+    currentShape.geojson.geometry.coordinates = currentShape.points.map((currentPoint) => {
+      return [parseFloat(currentPoint.shape_pt_lon), parseFloat(currentPoint.shape_pt_lat)];
+    });
+  });
+
+  // Finally, update all shapes
+  for (const currentShape of allShapes_formatted) {
+    await GTFSAPIDB.Shape.findOneAndUpdate({ shape_id: currentShape.shape_id }, currentShape, { upsert: true });
+  }
+
+  // Log progress
+  console.log(`⤷ Saved ${allShapes_formatted.length} shapes to API Database in ${timeCalc.getElapsedTime(startTime_shapes)}.`);
+
+  //
+}
+
 //
 //
 //
@@ -195,202 +219,238 @@ module.exports = {
 
     /* * */
 
+    // ROUTE > PATTERN > TRIP
+
     // Setup a counter that holds all processed route_ids.
     // This is used at the end to remove stale data from the database.
     let allProcessedRouteIds = [];
+
+    /* */
+    /* MUNICIPALITIES */
 
     // Fetch municipalities from www
     const allMunicipalities = await getMunicipalities();
     console.log(`⤷ Done fetching municipalities.`);
 
-    // Get all routes from GTFS table (routes.txt)
-    const allRoutes = await getRoutes();
+    //
+    //
+    //
 
-    // LOOP 1 — Routes
-    for (const currentRoute of allRoutes) {
+    /* */
+    /* SHAPES */
+
+    // Get all shapes from GTFS table (shapes.txt)
+    // and save them to MongoDB.
+    await formatAndSaveAllShapes();
+
+    //
+    //
+    //
+
+    /* */
+    /* ROUTES INTO LINES */
+
+    // Record the start time to later calculate duration
+    const startTime_RoutesIntoLines = process.hrtime();
+
+    // Get all routes from GTFS table (routes.txt)
+    const allRoutes_raw = await getAllRoutes();
+
+    // Combine routes with the same route_short_name into a 'line' object
+    const allLines_raw = allRoutes_raw.reduce((accumulator, currentRoute) => {
+      // Get, from the accumulator, a line object matching the route_short_name of the route_id being iterated
+      const existingLine = accumulator.find((item) => item.route_short_name === currentRoute.route_short_name);
+      // If there is a line, then add this route_id to the array of route_ids.
+      if (existingLine) existingLine.route_ids.push(currentRoute.route_id);
+      // else, add this route as a new line with all its properties.
+      else accumulator.push({ route_ids: [currentRoute.route_id], ...currentRoute });
+      // Finally return the updated accumulator array
+      return accumulator;
+    }, []);
+
+    console.log(`⤷ Reduced ${allRoutes_raw.length} routes into ${allLines_raw.length} lines in ${timeCalc.getElapsedTime(startTime_RoutesIntoLines)}.`);
+
+    //
+
+    // 1. LINES
+    // Iterate on each line
+    for (const [currentLineIndex, currentLine] of allLines_raw.entries()) {
       //
       // Record the start time to later calculate duration
-      const startTime = process.hrtime();
+      const startTime_line = process.hrtime();
 
-      // Add this route to the counter
-      allProcessedRouteIds.push(currentRoute.route_id);
-
-      // Initiate the formatted route object
-      let formattedRoute = {
-        route_id: currentRoute.route_id,
-        route_short_name: currentRoute.route_short_name,
-        route_long_name: currentRoute.route_long_name,
-        route_color: `#${currentRoute.route_color || 'FA3250'}`,
-        route_text_color: `#${currentRoute.route_text_color || 'FFFFFF'}`,
+      // Initiate the formatted line object
+      let formattedLine = {
+        route_ids: currentLine.route_ids,
+        route_short_name: currentLine.route_short_name,
+        route_long_name: currentLine.route_long_name,
+        route_color: `#${currentLine.route_color || 'FA3250'}`,
+        route_text_color: `#${currentLine.route_text_color || 'FFFFFF'}`,
         municipalities: [],
-        directions: [],
+        patterns: [],
       };
 
-      // Get all trips associated with this route
-      const allTrips_raw = await getTrips(currentRoute.route_id);
-
-      // Simplify trips array by removing non-common attributes
-      const allTrips_simplified = allTrips_raw.map((trip) => {
-        return { direction_id: trip.direction_id, headsign: trip.trip_headsign, shape_id: trip.shape_id };
-      });
-
-      // Deduplicate simplified trips array to keep only common attributes.
-      // This essentially results in an array of 'directions'. Save it to the route object.
-      const allDirections = allTrips_simplified.filter((value, index, array) => {
-        return index === array.findIndex((valueInner) => JSON.stringify(valueInner) === JSON.stringify(value));
-      });
-
-      // LOOP 2 — Directions
-      for (const currentDirection of allDirections) {
+      // 2. ROUTES
+      // Iterate on each route
+      for (const currentRoute of currentLine.route_ids) {
         //
-        // Initiate the formatted direction object
-        let formattedDirection = {
-          direction_id: currentDirection.direction_id,
-          headsign: currentDirection.headsign,
-          shape: [],
-          trips: [],
-        };
+        // Record the start time to later calculate duration
+        const startTime_route = process.hrtime();
 
-        // Get shape for this direction and sort it by 'shape_pt_sequence'
-        // The use of collator here is to ensure 'natural sorting' on numeric strings: https://stackoverflow.com/questions/2802341/natural-sort-of-alphanumerical-strings-in-javascript
-        const shape_raw = await getShape(currentDirection.shape_id);
-        const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
-        formattedDirection.shape = shape_raw.sort((a, b) => collator.compare(a.shape_pt_sequence, b.shape_pt_sequence));
+        // Get all trips associated with this route
+        const allTripsForThisRoute_raw = await getTrips(currentRoute.route_id);
 
-        // LOOP 3 - Trips
-        for (const currentTrip of allTrips_raw) {
+        // Simplify the trips array to only include the following attributes.
+        // These are the distinguishing factors for each pattern, i.e. the path and direction of a vehicle.
+        const allTripsForThisRoute_simplified = allTripsForThisRoute_raw.map((trip) => {
+          return {
+            route_id: trip.route_id,
+            direction_id: trip.direction_id,
+            headsign: trip.trip_headsign,
+          };
+        });
+
+        // For the above properties, remove all duplicate entries.
+        // This essentially results in the array of 'patterns'.
+        const allPatternsForThisRoute = allTripsForThisRoute_simplified.filter((value, index, array) => {
+          return index === array.findIndex((valueInner) => JSON.stringify(valueInner) === JSON.stringify(value));
+        });
+
+        // 3. PATTERNS
+        // Iterate on each pattern
+        for (const currentPattern of allPatternsForThisRoute) {
           //
-          // Skip all trips that do not belong to the current direction
-          if (currentTrip.direction_id !== currentDirection.direction_id) continue;
+          // Record the start time to later calculate duration
+          const startTime_pattern = process.hrtime();
 
-          // Initiate the formatted trip object
-          let formattedTrip = {
-            trip_id: currentTrip.trip_id,
-            dates: [],
-            schedule: [],
+          // Initiate the formatted pattern object
+          let formattedPattern = {
+            pattern_id: `${currentPattern.route_id}_${currentPattern.direction_id}`,
+            direction_id: currentPattern.direction_id,
+            headsign: currentPattern.headsign,
+            trips: [],
           };
 
-          // Get dates in the YYYYMMDD format (GTFS Standard format)
-          const allDates_raw = await getDates(currentTrip.service_id);
-          formattedTrip.dates = allDates_raw.map((item) => item.date);
-
-          // Get stop times for this trip
-          const allStopTimes_raw = await getStopTimes(currentTrip.trip_id);
-
-          // LOOP 4 - Stop Times
-          for (const currentStopTime of allStopTimes_raw) {
+          // 4. TRIPS
+          // Iterate on each trip
+          for (const currentTrip of allTripsForThisRoute_raw) {
             //
-            // Format arrival_time
-            const arrival_time_array = currentStopTime.arrival_time.split(':');
-            let arrival_time_hours = arrival_time_array[0].padStart(2, '0');
-            if (arrival_time_hours && Number(arrival_time_hours) > 23) {
-              const arrival_time_hours_adjusted = Number(arrival_time_hours) - 24;
-              arrival_time_hours = String(arrival_time_hours_adjusted).padStart(2, '0');
-            }
-            const arrival_time_minutes = arrival_time_array[1].padStart(2, '0');
-            const arrival_time_seconds = arrival_time_array[2].padStart(2, '0');
+            // Record the start time to later calculate duration
+            const startTime_trip = process.hrtime();
 
-            // Format departure_time
-            const departure_time_array = currentStopTime.departure_time.split(':');
-            let departure_time_hours = departure_time_array[0].padStart(2, '0');
-            if (departure_time_hours && Number(departure_time_hours) > 23) {
-              const departure_time_hours_adjusted = Number(departure_time_hours) - 24;
-              departure_time_hours = String(departure_time_hours_adjusted).padStart(2, '0');
-            }
-            const departure_time_minutes = departure_time_array[1].padStart(2, '0');
-            const departure_time_seconds = departure_time_array[2].padStart(2, '0');
+            // Skip all trips that do not belong to the current direction
+            if (currentTrip.direction_id !== currentPattern.direction_id) continue;
 
-            // Find out which municipalities this route serves
-            // using the first two digits of stop_id
-            const municipalityId = currentStopTime.stop_id?.substr(0, 2);
-            // Check if this municipaliy is already in the route
-            const alreadyHasMunicipality = formattedRoute.municipalities?.findIndex((item) => {
-              return municipalityId === item.id;
-            });
-            // Add the municipality if it is still not added
-            if (alreadyHasMunicipality < 0) {
-              const stopMunicipality = allMunicipalities.filter((item) => {
+            // Initiate the formatted trip object
+            let formattedTrip = {
+              trip_id: currentTrip.trip_id,
+              shape_id: currentTrip.shape_id,
+              calendar_desc: currentTrip.calendar_desc,
+              dates: [],
+              schedule: [],
+            };
+
+            // Get dates in the YYYYMMDD format (GTFS Standard format)
+            const allDates_raw = await getDates(currentTrip.service_id);
+            formattedTrip.dates = allDates_raw.map((item) => item.date);
+
+            // Get stop times for this trip
+            const allStopTimes_raw = await getStopTimes(currentTrip.trip_id);
+
+            // 5. STOP TIMES
+            // Iterate on each stop for this trip
+            for (const currentStopTime of allStopTimes_raw) {
+              //
+              // Record the start time to later calculate duration
+              const startTime_stopTime = process.hrtime();
+
+              // Format arrival_time
+              const arrival_time_array = currentStopTime.arrival_time.split(':');
+              let arrival_time_hours = arrival_time_array[0].padStart(2, '0');
+              if (arrival_time_hours && Number(arrival_time_hours) > 23) {
+                const arrival_time_hours_adjusted = Number(arrival_time_hours) - 24;
+                arrival_time_hours = String(arrival_time_hours_adjusted).padStart(2, '0');
+              }
+              const arrival_time_minutes = arrival_time_array[1].padStart(2, '0');
+              const arrival_time_seconds = arrival_time_array[2].padStart(2, '0');
+
+              // Format departure_time
+              const departure_time_array = currentStopTime.departure_time.split(':');
+              let departure_time_hours = departure_time_array[0].padStart(2, '0');
+              if (departure_time_hours && Number(departure_time_hours) > 23) {
+                const departure_time_hours_adjusted = Number(departure_time_hours) - 24;
+                departure_time_hours = String(departure_time_hours_adjusted).padStart(2, '0');
+              }
+              const departure_time_minutes = departure_time_array[1].padStart(2, '0');
+              const departure_time_seconds = departure_time_array[2].padStart(2, '0');
+
+              // Find out which municipalities this route serves
+              // using the first two digits of stop_id
+              const municipalityId = currentStopTime.stop_id?.substr(0, 2);
+              // Check if this municipaliy is already in the route
+              const alreadyHasMunicipality = formattedLine.municipalities?.findIndex((item) => {
                 return municipalityId === item.id;
               });
-              if (stopMunicipality.length) {
-                formattedRoute.municipalities.push(stopMunicipality[0]);
+              // Add the municipality if it is still not added
+              if (alreadyHasMunicipality < 0) {
+                const stopMunicipality = allMunicipalities.filter((item) => {
+                  return municipalityId === item.id;
+                });
+                if (stopMunicipality.length) {
+                  formattedLine.municipalities.push(stopMunicipality[0]);
+                }
               }
+              // Save formatted stop time
+              formattedTrip.schedule.push({
+                stop_sequence: currentStopTime.stop_sequence,
+                stop_id: currentStopTime.stop_id,
+                stop_name: currentStopTime.stop_name,
+                stop_lon: currentStopTime.stop_lon,
+                stop_lat: currentStopTime.stop_lat,
+                arrival_time: `${arrival_time_hours}:${arrival_time_minutes}:${arrival_time_seconds}`,
+                arrival_time_operation: currentStopTime.arrival_time,
+                departure_time: `${departure_time_hours}:${departure_time_minutes}:${departure_time_seconds}`,
+                departure_time_operation: currentStopTime.departure_time,
+                shape_dist_traveled: currentStopTime.shape_dist_traveled,
+              });
+
+              console.log(`⤷ Processed stop_sequence ${currentStopTime.stop_sequence} with stop_id ${currentStopTime.stop_id} in ${timeCalc.getElapsedTime(startTime_stopTime)}.`);
+
+              //
             }
-            // Save formatted stop time
-            formattedTrip.schedule.push({
-              stop_sequence: currentStopTime.stop_sequence,
-              stop_id: currentStopTime.stop_id,
-              stop_name: currentStopTime.stop_name,
-              stop_lon: currentStopTime.stop_lon,
-              stop_lat: currentStopTime.stop_lat,
-              arrival_time: `${arrival_time_hours}:${arrival_time_minutes}:${arrival_time_seconds}`,
-              arrival_time_operation: currentStopTime.arrival_time,
-              departure_time: `${departure_time_hours}:${departure_time_minutes}:${departure_time_seconds}`,
-              departure_time_operation: currentStopTime.departure_time,
-              shape_dist_traveled: currentStopTime.shape_dist_traveled,
-            });
+
+            // Save trip object to trips array
+            formattedPattern.trips.push(formattedTrip);
+
+            console.log(`⤷ Processed trip_id ${currentTrip.trip_id} in ${timeCalc.getElapsedTime(startTime_trip)}.`);
+
+            //
           }
 
-          // Save trip object to trips array
-          formattedDirection.trips.push(formattedTrip);
+          // Sort trips by departure_time ASC
+          formattedPattern.trips.sort((a, b) => (a.schedule[0]?.departure_time_operation > b.schedule[0]?.departure_time_operation ? 1 : -1));
+
+          // Save this pattern in formattedLine
+          formattedLine.patterns.push(formattedPattern);
+
+          console.log(`⤷ Processed pattern_id ${currentPattern.pattern_id} in ${timeCalc.getElapsedTime(startTime_pattern)}.`);
+
+          //
         }
 
-        // Sort trips by departure_time ASC
-        formattedDirection.trips.sort((a, b) => (a.schedule[0]?.departure_time_operation > b.schedule[0]?.departure_time_operation ? 1 : -1));
-
-        // Save this direction in formattedRoutes
-        formattedRoute.directions.push(formattedDirection);
+        //
       }
 
       // Save route to MongoDB
-      await GTFSAPIDB.Route.findOneAndUpdate({ route_id: formattedRoute.route_id }, formattedRoute, { upsert: true });
+      await GTFSAPIDB.Line.findOneAndUpdate({ route_short_name: formattedLine.route_short_name }, formattedLine, { upsert: true });
 
-      const elapsedTime = timeCalc.getElapsedTime(startTime);
-      console.log(`⤷ [${allProcessedRouteIds.length}/${allRoutes.length}] Saved route ${formattedRoute.route_id} to API Database in ${elapsedTime}.`);
+      console.log(`⤷ [${currentLineIndex}/${allLines_raw.length}] Saved line ${formattedLine.route_short_name} to API Database in ${timeCalc.getElapsedTime(startTime_line)}.`);
 
       //
     }
 
-    // Delete all documents with route_ids not present in the new GTFS version
-    const deletedStaleRoutes = await GTFSAPIDB.Route.deleteMany({ route_id: { $nin: allProcessedRouteIds } });
-    console.log(`⤷ Deleted ${deletedStaleRoutes.deletedCount} stale routes.`);
-
-    // Retrieve all distinct route_short_names and iterate on each one.
-    const allRouteBasesInDatabase = await GTFSAPIDB.Route.aggregate([
-      {
-        $group: {
-          _id: '$route_short_name',
-          route_id: { $min: '$route_id' },
-          route_long_name: { $first: '$route_long_name' },
-          route_color: { $first: '$route_color' },
-          route_text_color: { $first: '$route_text_color' },
-          municipalities: { $first: '$municipalities' },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          route_id: 1,
-          route_short_name: '$_id',
-          route_long_name: 1,
-          route_color: 1,
-          route_text_color: 1,
-          municipalities: 1,
-        },
-      },
-    ]);
-
-    // Update the database with the new group of route bases
-    for (const routeBase of allRouteBasesInDatabase) {
-      await GTFSAPIDB.RouteSummary.findOneAndUpdate({ route_id: routeBase.route_id }, routeBase, { upsert: true });
-      console.log(`⤷ Saved route base ${routeBase.route_id} to API Database.`);
-    }
-
-    // Delete all route bases not present in the last update
-    const allProcessedBaseRouteIds = allRouteBasesInDatabase.map((item) => item.route_id);
-    const deletedStaleRouteBases = await GTFSAPIDB.RouteSummary.deleteMany({ route_id: { $nin: allProcessedBaseRouteIds } });
-    console.log(`⤷ Deleted ${deletedStaleRouteBases.deletedCount} stale route bases.`);
-
     //
   },
+
+  //
 };
