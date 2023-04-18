@@ -5,9 +5,8 @@ const { GTFSAPIDB_USER, GTFSAPIDB_PASSWORD, GTFSAPIDB_HOST, GTFSAPIDB_NAME } = p
 
 class GTFSAPIDB {
   constructor() {
-    this.connection = mongoose.createConnection(
-      `mongodb://${GTFSAPIDB_USER}:${GTFSAPIDB_PASSWORD}@${GTFSAPIDB_HOST}/${GTFSAPIDB_NAME}?authSource=admin`
-    );
+    this.connection = mongoose.createConnection(`mongodb://${GTFSAPIDB_USER}:${GTFSAPIDB_PASSWORD}@${GTFSAPIDB_HOST}/${GTFSAPIDB_NAME}?authSource=admin`);
+    this.Line = this.connection.model('Line', require('../schemas/Line'));
     this.RouteSummary = this.connection.model('RouteSummary', require('../schemas/RouteSummary'));
     this.Route = this.connection.model('Route', require('../schemas/Route'));
     this.Stop = this.connection.model('Stop', require('../schemas/Stop'));
