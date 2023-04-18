@@ -143,10 +143,10 @@ module.exports = {
         // If the current route_short_name is not yet in the routes array of the route object,
         // retrieve the RouteSummary object from the database and save it to the routes array of this stop.
         if (!formattedStop.routes.some((object) => object.route_short_name === currentRow.route_short_name)) {
-          const foundRouteSummaryObject = await GTFSAPIDB.RouteSummary.findOne({ route_short_name: currentRow.route_short_name });
-          if (foundRouteSummaryObject) {
-            formattedStop.routes.push(foundRouteSummaryObject);
-          }
+          //   const foundRouteSummaryObject = await GTFSAPIDB.RouteSummary.findOne({ route_short_name: currentRow.route_short_name });
+          //   if (foundRouteSummaryObject) {
+          //     formattedStop.routes.push(foundRouteSummaryObject);
+          //   }
         }
       }
 

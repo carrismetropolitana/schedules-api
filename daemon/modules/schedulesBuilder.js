@@ -259,11 +259,9 @@ module.exports = {
 
     /* * */
 
-    // ROUTE > PATTERN > TRIP
-
-    // Setup a counter that holds all processed route_ids.
-    // This is used at the end to remove stale data from the database.
-    let allProcessedRouteIds = [];
+    //
+    //
+    //
 
     /* */
     /* MUNICIPALITIES */
