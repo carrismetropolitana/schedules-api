@@ -360,9 +360,6 @@ module.exports = {
         // Iterate on each pattern
         for (const currentPattern of allPatternsForThisRoute) {
           //
-          // Record the start time to later calculate duration
-          const startTime_pattern = process.hrtime();
-
           // Initiate the formatted pattern object
           let formattedPattern = {
             pattern_id: `${currentPattern.route_id}_${currentPattern.direction_id}`,
@@ -462,8 +459,6 @@ module.exports = {
 
           // Save this pattern in formattedLine
           formattedLine.patterns.push(formattedPattern);
-
-          console.log(`⤷ Processed pattern_id ${formattedPattern.pattern_id} in ${timeCalc.getElapsedTime(startTime_pattern)}.`);
 
           //
         }
