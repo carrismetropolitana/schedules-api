@@ -64,11 +64,11 @@ async function appInitPoint() {
 
     console.log();
     console.log('STEP 7: Build Schedules...');
-    // await schedulesBuilder.start();
+    await schedulesBuilder.start();
 
     console.log();
     console.log('STEP 8: Build Stops...');
-    await stopsBuilder.start();
+    // await stopsBuilder.start();
 
     console.log();
     console.log('STEP 9: Disconnect from databases...');
