@@ -73,9 +73,11 @@ async function getAllRoutes() {
  * @returns {Array} Array of trip objects
  */
 async function getTrips(route_id) {
+  console.log('route_id in trips: ', route_id);
   const [rows, fields] = await GTFSParseDB.connection.execute(
     `
         SELECT
+            route_id,
             trip_id,
             direction_id,
             trip_headsign,
@@ -324,14 +326,14 @@ module.exports = {
         patterns: [],
       };
 
-      console.log('currentLine.route_ids', currentLine.route_ids);
-
       // 2. ROUTES
       // Iterate on each route
       for (const currentRoute of currentLine.route_ids) {
         //
         // Record the start time to later calculate duration
         const startTime_route = process.hrtime();
+
+        console.log('currentRoute.route_id', currentRoute.route_id);
 
         // Get all trips associated with this route
         const allTripsForThisRoute_raw = await getTrips(currentRoute.route_id);
