@@ -282,7 +282,7 @@ module.exports = {
 
     // Get all shapes from GTFS table (shapes.txt)
     // and save them to MongoDB.
-    await formatAndSaveAllShapes();
+    // await formatAndSaveAllShapes();
 
     //
     //
