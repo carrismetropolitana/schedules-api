@@ -402,9 +402,6 @@ module.exports = {
             // Iterate on each stop for this trip
             for (const currentStopTime of allStopTimes_raw) {
               //
-              // Record the start time to later calculate duration
-              const startTime_stopTime = process.hrtime();
-
               // Format arrival_time
               const arrival_time_array = currentStopTime.arrival_time.split(':');
               let arrival_time_hours = arrival_time_array[0].padStart(2, '0');
@@ -454,8 +451,6 @@ module.exports = {
                 departure_time_operation: currentStopTime.departure_time,
                 shape_dist_traveled: currentStopTime.shape_dist_traveled,
               });
-
-              console.log(`⤷ Processed stop_sequence ${currentStopTime.stop_sequence} with stop_id ${currentStopTime.stop_id} in ${timeCalc.getElapsedTime(startTime_stopTime)}.`);
 
               //
             }
