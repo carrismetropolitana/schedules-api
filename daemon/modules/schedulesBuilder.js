@@ -255,7 +255,7 @@ module.exports = {
     // the route_id with the lowest suffix (ex: 1234_0, or 1234_1 if no _0 exists) for all routes
     // with the same 'route_short_name'. After all individual routes are saved in the database,
     // further processing happens to find out the base for each line. These routes are saved
-    // in the RouteSummary collection in MongoDB.
+    // in the  collection in MongoDB.
 
     /* * */
 
