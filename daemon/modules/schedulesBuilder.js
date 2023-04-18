@@ -156,11 +156,15 @@ async function getStopTimes(trip_id) {
 
 async function formatAndSaveAllShapes() {
   //
+  console.log(`⤷ Preparing to format shapes...`);
+
   // Record the start time to later calculate duration
-  const startTime_shapes = process.hrtime();
+  const startTime_Shapes = process.hrtime();
 
   // Get all shapes from GTFS table (shapes.txt)
   const allShapes_raw = await getAllShapes();
+
+  console.log(`⤷ Got ${allShapes_raw.length} rows from SQL.`);
 
   // Combine shapes with the same shape_id into a 'shape' object
   const allShapes_formatted = allShapes_raw.reduce((accumulator, currentPoint) => {
@@ -178,6 +182,8 @@ async function formatAndSaveAllShapes() {
     // Finally return the updated accumulator array
     return accumulator;
   }, []);
+
+  console.log(`⤷ Shapes reduced.`);
 
   // Sort each shape points array by 'shape_pt_sequence'
   // The use of collator here is to ensure 'natural sorting' on numeric strings: https://stackoverflow.com/questions/2802341/natural-sort-of-alphanumerical-strings-in-javascript
@@ -199,7 +205,7 @@ async function formatAndSaveAllShapes() {
   }
 
   // Log progress
-  console.log(`⤷ Saved ${allShapes_formatted.length} shapes to API Database in ${timeCalc.getElapsedTime(startTime_shapes)}.`);
+  console.log(`⤷ Saved ${allShapes_formatted.length} shapes to API Database in ${timeCalc.getElapsedTime(startTime_Shapes)}.`);
 
   //
 }
