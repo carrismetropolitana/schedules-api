@@ -469,7 +469,7 @@ module.exports = {
           // Save this pattern in formattedLine
           formattedLine.patterns.push(formattedPattern);
 
-          console.log(`⤷ Processed pattern_id ${currentPattern.pattern_id} in ${timeCalc.getElapsedTime(startTime_pattern)}.`);
+          console.log(`⤷ Processed pattern_id ${formattedPattern.pattern_id} in ${timeCalc.getElapsedTime(startTime_pattern)}.`);
 
           //
         }
