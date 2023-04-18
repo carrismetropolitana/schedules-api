@@ -192,12 +192,16 @@ async function formatAndSaveAllShapes() {
     currentShape.points = currentShape.points.sort((a, b) => collator.compare(a.shape_pt_sequence, b.shape_pt_sequence));
   });
 
+  console.log(`⤷ Shapes formatted.`);
+
   // Create the geojson structure for each shape
   allShapes_formatted.forEach((currentShape) => {
     currentShape.geojson.geometry.coordinates = currentShape.points.map((currentPoint) => {
       return [parseFloat(currentPoint.shape_pt_lon), parseFloat(currentPoint.shape_pt_lat)];
     });
   });
+
+  console.log(`⤷ Shapes geojson.`);
 
   // Finally, update all shapes
   for (const currentShape of allShapes_formatted) {
