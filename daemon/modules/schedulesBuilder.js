@@ -319,6 +319,8 @@ module.exports = {
         patterns: [],
       };
 
+      console.log('currentLine.route_ids', currentLine.route_ids);
+
       // 2. ROUTES
       // Iterate on each route
       for (const currentRoute of currentLine.route_ids) {
