@@ -73,7 +73,6 @@ async function getAllRoutes() {
  * @returns {Array} Array of trip objects
  */
 async function getTrips(route_id) {
-  console.log('route_id in trips: ', route_id);
   const [rows, fields] = await GTFSParseDB.connection.execute(
     `
         SELECT
@@ -457,8 +456,6 @@ module.exports = {
 
             // Save trip object to trips array
             formattedPattern.trips.push(formattedTrip);
-
-            console.log(`⤷ Processed trip_id ${currentTrip.trip_id} in ${timeCalc.getElapsedTime(startTime_trip)}.`);
 
             //
           }
