@@ -375,9 +375,6 @@ module.exports = {
           // Iterate on each trip
           for (const currentTrip of allTripsForThisRoute_raw) {
             //
-            // Record the start time to later calculate duration
-            const startTime_trip = process.hrtime();
-
             // Skip all trips that do not belong to the current direction
             if (currentTrip.direction_id !== currentPattern.direction_id) continue;
 
@@ -476,11 +473,15 @@ module.exports = {
 
       // Save route to MongoDB
       await GTFSAPIDB.Line.findOneAndUpdate({ route_short_name: formattedLine.route_short_name }, formattedLine, { upsert: true });
-
       console.log(`⤷ [${currentLineIndex}/${allLines_raw.length}] Saved line ${formattedLine.route_short_name} to API Database in ${timeCalc.getElapsedTime(startTime_line)}.`);
 
       //
     }
+
+    // Delete all documents with route_short_names not present in the new GTFS version
+    const allProcessedLineRouteShortNames = allLines_raw.map((item) => item.route_short_name);
+    const deletedStaleLines = await GTFSAPIDB.Shape.deleteMany({ shape_id: { $nin: allProcessedLineRouteShortNames } });
+    console.log(`⤷ Deleted ${deletedStaleLines.deletedCount} stale lines.`);
 
     //
   },
