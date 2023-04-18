@@ -332,9 +332,6 @@ module.exports = {
       // Iterate on each route
       for (const currentRouteId of currentLine.route_ids) {
         //
-        // Record the start time to later calculate duration
-        const startTime_route = process.hrtime();
-
         // Get all trips associated with this route
         const allTripsForThisRoute_raw = await getTrips(currentRouteId);
 

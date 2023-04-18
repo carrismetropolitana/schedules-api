@@ -60,7 +60,6 @@ module.exports = new mongoose.Schema(
             trip_id: {
               type: String,
               maxlength: 100,
-              unique: true,
             },
             shape_id: {
               type: String,
