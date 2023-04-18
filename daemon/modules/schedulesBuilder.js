@@ -214,6 +214,11 @@ async function formatAndSaveAllShapes() {
   // Log progress
   console.log(`⤷ Saved ${allShapes_formatted.length} shapes to API Database in ${timeCalc.getElapsedTime(startTime_Shapes)}.`);
 
+  // Delete all documents with shape_ids not present in the new GTFS version
+  const allProcessedShapeIds = allShapes_formatted.map((item) => item.shape_id);
+  const deletedStaleShapes = await GTFSAPIDB.Shape.deleteMany({ shape_id: { $nin: allProcessedShapeIds } });
+  console.log(`⤷ Deleted ${deletedStaleShapes.deletedCount} stale shapes.`);
+
   //
 }
 
